@@ -63,7 +63,7 @@ cd exchange-rates
 # Press F5 to run the application.
 
 # Access Swagger
-# Navigate to http://localhost:5000/swagger/index.html
+# Navigate to http://localhost:8080/swagger/index.html
 ```
 Running with Docker Compose
 ```
