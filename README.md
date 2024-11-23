@@ -64,16 +64,12 @@ cd exchange-rates
 
 # Access Swagger
 # Navigate to http://localhost:5000/swagger/index.html
-
+```
 Running with Docker Compose
-
+```
 # Clone the Repository
 git clone https://github.com/your-repository/exchange-rates.git
 cd exchange-rates
-
-# Set Up Secrets
-echo "your-alpha-vantage-api-key" > alpha_vantage_api_key.txt
-echo "Host=db;Database=exchange_rates;Username=postgres;Password=postgres" > postgres_connection_string.txt
 
 # Start the Services
 docker-compose up --build
