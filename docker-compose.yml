@@ -1,0 +1,37 @@
+version: '3.4'
+
+services:
+  exchangerates:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"    
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: ${POSTGRES_CONNECTION_STRING}
+      AlphaVantage__ApiKey: ${ALPHA_VANTAGE_API_KEY}
+
+  db:
+    image: postgres:15    
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: exchange_rates
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
