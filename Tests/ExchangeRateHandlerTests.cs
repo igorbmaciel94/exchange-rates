@@ -3,7 +3,7 @@ using Xunit;
 using Moq;
 using Application.Models;
 using System;
-using Application.Feature;
+using Application.Features;
 using Domain.Entities;
 using Domain.Interfaces;
 using Application.Interfaces;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Tests
 {
-    public class ExchangeRateServiceTests
+    public class ExchangeRateHandlerTests
     {
         [Fact]
         public async Task AddOrUpdateRateAsync_AddsRate_WhenRateDoesNotExist()
@@ -24,9 +24,9 @@ namespace Tests
             mockExternalProvider.Setup(provider => provider.FetchExchangeRateAsync("USD", "EUR"))
                 .ReturnsAsync(new ExternalRate(1.1m, 1.2m));
 
-            var mockLogger = new Mock<ILogger<ExchangeRateCommandHandler>>();
+            var mockLogger = new Mock<ILogger<ExchangeRateHandler>>();
 
-            var service = new ExchangeRateCommandHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
+            var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
 
             // Act
             var result = await service.AddOrUpdateRateAsync("USD", "EUR", 1.1m, 1.2m);
@@ -38,8 +38,8 @@ namespace Tests
             Assert.Equal(1.1m, result.Bid);
             Assert.Equal(1.2m, result.Ask);
             mockRepo.Verify(repo => repo.AddRateAsync(It.IsAny<ExchangeRate>()), Times.Once);
-            mockLogger.Verify(logger => logger.LogInformation(
-                "Added new exchange rate for {BaseCurrency}/{QuoteCurrency}.", "USD", "EUR"), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Information,
+                string.Format("Added new exchange rate for {0}/{1}.", "USD", "EUR"), Times.Once());
         }
 
         [Fact]
@@ -53,9 +53,9 @@ namespace Tests
             mockRepo.Setup(repo => repo.GetRateAsync("USD", "EUR")).ReturnsAsync(existingRate);
 
             var mockExternalProvider = new Mock<IExternalExchangeRateProvider>();
-            var mockLogger = new Mock<ILogger<ExchangeRateCommandHandler>>();
+            var mockLogger = new Mock<ILogger<ExchangeRateHandler>>();
 
-            var service = new ExchangeRateCommandHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
+            var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
 
             // Act
             var result = await service.AddOrUpdateRateAsync("USD", "EUR", 1.2m, 1.3m);
@@ -67,8 +67,8 @@ namespace Tests
             Assert.Equal(1.2m, result.Bid);
             Assert.Equal(1.3m, result.Ask);
             mockRepo.Verify(repo => repo.UpdateRateAsync(It.IsAny<ExchangeRate>()), Times.Once);
-            mockLogger.Verify(logger => logger.LogInformation(
-                "Exchange rate found. Updating values."), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Information,
+                "Exchange rate found. Updating values.", Times.Once());
         }
 
         [Fact]
@@ -82,9 +82,9 @@ namespace Tests
             mockExternalProvider.Setup(provider => provider.FetchExchangeRateAsync("USD", "EUR"))
                 .ReturnsAsync((ExternalRate)null); // Simulate fetch failure
 
-            var mockLogger = new Mock<ILogger<ExchangeRateCommandHandler>>();
+            var mockLogger = new Mock<ILogger<ExchangeRateHandler>>();
 
-            var service = new ExchangeRateCommandHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
+            var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<Exception>(() =>
@@ -92,8 +92,8 @@ namespace Tests
 
             Assert.Equal("Failed to fetch exchange rate for USD/EUR.", exception.Message);
             mockRepo.Verify(repo => repo.AddRateAsync(It.IsAny<ExchangeRate>()), Times.Never);
-            mockLogger.Verify(logger => logger.LogError(
-                It.IsAny<Exception>(), "Error occurred while adding or updating exchange rate for {BaseCurrency}/{QuoteCurrency}.", "USD", "EUR"), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Error,
+                 string.Format("Failed to fetch exchange rate for {0}/{1}.", "USD", "EUR"), Times.Once());
         }
     }
 }

@@ -1,4 +1,4 @@
-using Application.Feature;
+using Application.Features;
 using Application.Interfaces;
 using Domain.Interfaces;
 using Infrastructure.Data;
@@ -51,7 +51,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register application services
 builder.Services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
-builder.Services.AddScoped<IExchangeRateService, ExchangeRateCommandHandler>();
+builder.Services.AddScoped<IExchangeRateService, ExchangeRateHandler>();
 builder.Services.AddScoped<IExternalExchangeRateProvider, ExternalExchangeRateProvider>();
 builder.Services.AddHttpClient<IExternalExchangeRateProvider, ExternalExchangeRateProvider>(client =>
 {

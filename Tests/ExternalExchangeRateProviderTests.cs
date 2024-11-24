@@ -58,8 +58,8 @@ namespace Tests
             Assert.NotNull(result);
             Assert.Equal(1.1m, result.Bid);
             Assert.Equal(1.2m, result.Ask);
-            mockLogger.Verify(logger => logger.LogInformation(
-                "Successfully fetched exchange rate: Bid={Bid}, Ask={Ask}.", 1.1m, 1.2m), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Information,
+                string.Format("Successfully fetched exchange rate: Bid={0}, Ask={1}.", 1.1m, 1.2m), Times.Once());
         }
 
         [Fact]
@@ -84,8 +84,8 @@ namespace Tests
 
             // Assert
             Assert.Null(result);
-            mockLogger.Verify(logger => logger.LogWarning(
-                "Failed to fetch exchange rate. Status Code: {StatusCode}", HttpStatusCode.BadRequest), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Warning,
+                string.Format("Failed to fetch exchange rate. Status Code: {0}", HttpStatusCode.BadRequest), Times.Once());
         }
     }
 

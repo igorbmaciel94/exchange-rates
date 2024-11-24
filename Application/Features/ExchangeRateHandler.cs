@@ -5,13 +5,13 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Feature
+namespace Application.Features
 {
-    public class ExchangeRateCommandHandler(IExchangeRateRepository repository, IExternalExchangeRateProvider externalProvider, ILogger<ExchangeRateCommandHandler> logger) : IExchangeRateService
+    public class ExchangeRateHandler(IExchangeRateRepository repository, IExternalExchangeRateProvider externalProvider, ILogger<ExchangeRateHandler> logger) : IExchangeRateService
     {
         private readonly IExchangeRateRepository _repository = repository;
         private readonly IExternalExchangeRateProvider _externalProvider = externalProvider;
-        private readonly ILogger<ExchangeRateCommandHandler> _logger = logger;
+        private readonly ILogger<ExchangeRateHandler> _logger = logger;
 
         public async Task<ExchangeRate> GetRateAsync(string baseCurrency, string quoteCurrency)
         {
@@ -27,8 +27,13 @@ namespace Application.Feature
             if (rate == null)
             {
                 _logger.LogInformation("Exchange rate not found. Fetching from external provider.");
-                var externalRate = await _externalProvider.FetchExchangeRateAsync(baseCurrency, quoteCurrency)
-                    ?? throw new Exception($"Failed to fetch exchange rate for {baseCurrency}/{quoteCurrency}.");
+                var externalRate = await _externalProvider.FetchExchangeRateAsync(baseCurrency, quoteCurrency);
+
+                if (externalRate == null)
+                {
+                    _logger.LogError("Failed to fetch exchange rate for {BaseCurrency}/{QuoteCurrency}.", baseCurrency, quoteCurrency);
+                    throw new Exception($"Failed to fetch exchange rate for {baseCurrency}/{quoteCurrency}.");
+                }
 
                 rate = new ExchangeRate(new CurrencyPair(baseCurrency, quoteCurrency), externalRate.Bid, externalRate.Ask);
                 await _repository.AddRateAsync(rate);
