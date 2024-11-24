@@ -1,24 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
-using ExchangeRates.Application.Interfaces;
-using ExchangeRates.Domain.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 using Presentation.Dto;
 using Swashbuckle.AspNetCore.Filters;
+using Domain.Entities;
+using Application.Interfaces;
 
-namespace ExchangeRates.Presentation.Controllers
+namespace Presentation.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ExchangeRateController(IExchangeRateService service) : ControllerBase
+    public class ExchangeRateController(IExchangeRateService service, ILogger<ExchangeRateController> logger) : ControllerBase
     {
         private readonly IExchangeRateService _service = service;
+        private readonly ILogger<ExchangeRateController> _logger = logger;
 
-        /// <summary>
-        /// Get the exchange rate for a currency pair.
-        /// </summary>
-        /// <param name="baseCurrency">The base currency (e.g., USD).</param>
-        /// <param name="quoteCurrency">The quote currency (e.g., EUR).</param>
-        /// <returns>The exchange rate for the specified currency pair.</returns>
         [HttpGet("{baseCurrency}/{quoteCurrency}")]
         [SwaggerOperation(
             Summary = "Get exchange rate",
@@ -30,15 +25,19 @@ namespace ExchangeRates.Presentation.Controllers
             [FromRoute][SwaggerParameter(Description = "The base currency (e.g., USD)")] string baseCurrency,
             [FromRoute][SwaggerParameter(Description = "The quote currency (e.g., EUR)")] string quoteCurrency)
         {
+            _logger.LogInformation("Fetching exchange rate for {BaseCurrency}/{QuoteCurrency}", baseCurrency, quoteCurrency);
             var rate = await _service.GetRateAsync(baseCurrency, quoteCurrency);
-            return rate != null ? Ok(rate) : NotFound();
+
+            if (rate != null)
+            {
+                _logger.LogInformation("Exchange rate found for {BaseCurrency}/{QuoteCurrency}.", baseCurrency, quoteCurrency);
+                return Ok(rate);
+            }
+
+            _logger.LogWarning("Exchange rate not found for {BaseCurrency}/{QuoteCurrency}.", baseCurrency, quoteCurrency);
+            return NotFound();
         }
 
-        /// <summary>
-        /// Add a new exchange rate.
-        /// </summary>
-        /// <param name="dto">The exchange rate data.</param>
-        /// <returns>The created exchange rate.</returns>    
         [HttpPost]
         [SwaggerOperation(
             Summary = "Add or update exchange rate",
@@ -49,10 +48,20 @@ namespace ExchangeRates.Presentation.Controllers
         [SwaggerRequestExample(typeof(ExchangeRateCreateDto), typeof(ExchangeRateCreateDtoExample))]
         public async Task<IActionResult> AddOrUpdateRate([FromBody] ExchangeRateCreateDto dto)
         {
-            var rate = await _service.AddOrUpdateRateAsync(dto.BaseCurrency, dto.QuoteCurrency, dto.Bid, dto.Ask);
+            _logger.LogInformation("Adding or updating exchange rate for {BaseCurrency}/{QuoteCurrency}.", dto.BaseCurrency, dto.QuoteCurrency);
 
-            return CreatedAtAction(nameof(GetRate), new { rate.Pair.BaseCurrency, rate.Pair.QuoteCurrency }, rate);
+            try
+            {
+                var rate = await _service.AddOrUpdateRateAsync(dto.BaseCurrency, dto.QuoteCurrency, dto.Bid, dto.Ask);
+                _logger.LogInformation("Successfully added or updated exchange rate for {BaseCurrency}/{QuoteCurrency}.", dto.BaseCurrency, dto.QuoteCurrency);
+
+                return CreatedAtAction(nameof(GetRate), new { rate.Pair.BaseCurrency, rate.Pair.QuoteCurrency }, rate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while adding or updating exchange rate for {BaseCurrency}/{QuoteCurrency}.", dto.BaseCurrency, dto.QuoteCurrency);
+                return StatusCode(500, "Internal server error");
+            }
         }
-
     }
 }

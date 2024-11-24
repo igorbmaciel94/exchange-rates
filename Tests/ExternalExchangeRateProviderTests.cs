@@ -5,11 +5,13 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.Extensions.Configuration;
-using ExchangeRates.Infrastructure.Services;
 using System.Collections.Generic;
 using System.IO;
+using Infrastructure.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
 
-namespace ExchangeRates.Tests.Services
+namespace Tests
 {
     public class ExternalExchangeRateProviderTests
     {
@@ -17,7 +19,7 @@ namespace ExchangeRates.Tests.Services
         {
             var configurationBuilder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-.                AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddUserSecrets<ExternalExchangeRateProviderTests>();
             return configurationBuilder.Build();
         }
@@ -45,8 +47,9 @@ namespace ExchangeRates.Tests.Services
             };
 
             var configuration = LoadConfiguration();
+            var mockLogger = new Mock<ILogger<ExternalExchangeRateProvider>>();
 
-            var provider = new ExternalExchangeRateProvider(httpClient, configuration);
+            var provider = new ExternalExchangeRateProvider(httpClient, configuration, mockLogger.Object);
 
             // Act
             var result = await provider.FetchExchangeRateAsync("USD", "EUR");
@@ -55,6 +58,8 @@ namespace ExchangeRates.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(1.1m, result.Bid);
             Assert.Equal(1.2m, result.Ask);
+            mockLogger.Verify(logger => logger.LogInformation(
+                "Successfully fetched exchange rate: Bid={Bid}, Ask={Ask}.", 1.1m, 1.2m), Times.Once);
         }
 
         [Fact]
@@ -70,14 +75,17 @@ namespace ExchangeRates.Tests.Services
             };
 
             var configuration = LoadConfiguration();
+            var mockLogger = new Mock<ILogger<ExternalExchangeRateProvider>>();
 
-            var provider = new ExternalExchangeRateProvider(httpClient, configuration);
+            var provider = new ExternalExchangeRateProvider(httpClient, configuration, mockLogger.Object);
 
             // Act
             var result = await provider.FetchExchangeRateAsync("USD", "EUR");
 
             // Assert
             Assert.Null(result);
+            mockLogger.Verify(logger => logger.LogWarning(
+                "Failed to fetch exchange rate. Status Code: {StatusCode}", HttpStatusCode.BadRequest), Times.Once);
         }
     }
 

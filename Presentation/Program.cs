@@ -1,9 +1,9 @@
-using ExchangeRates.Application.Interfaces;
-using ExchangeRates.Application.Services;
-using ExchangeRates.Domain.Interfaces;
-using ExchangeRates.Infrastructure.Data;
-using ExchangeRates.Infrastructure.Services;
-using ExchangeRates.Presentation.Controllers;
+using Application.Feature;
+using Application.Interfaces;
+using Domain.Interfaces;
+using Infrastructure.Data;
+using Infrastructure.Repositories;
+using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Polly;
@@ -11,6 +11,11 @@ using Presentation.Dto;
 using Swashbuckle.AspNetCore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure logging
+builder.Logging.ClearProviders(); // Optional: Clear default providers if needed
+builder.Logging.AddConsole(); // Add console logging
+builder.Logging.AddDebug();   // Add debug logging (for debugging in IDE)
 
 // Add User Secrets and other configurations
 builder.Configuration
@@ -46,7 +51,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register application services
 builder.Services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
-builder.Services.AddScoped<IExchangeRateService, ExchangeRateService>();
+builder.Services.AddScoped<IExchangeRateService, ExchangeRateCommandHandler>();
 builder.Services.AddScoped<IExternalExchangeRateProvider, ExternalExchangeRateProvider>();
 builder.Services.AddHttpClient<IExternalExchangeRateProvider, ExternalExchangeRateProvider>(client =>
 {

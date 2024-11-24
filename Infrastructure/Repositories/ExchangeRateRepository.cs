@@ -1,11 +1,9 @@
-
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using ExchangeRates.Domain.Entities;
-using ExchangeRates.Domain.Interfaces;
-using ExchangeRates.Infrastructure.Data;
+using Domain.Entities;
+using Domain.Interfaces;
+using Infrastructure.Data;
 
-namespace ExchangeRates.Infrastructure.Services
+namespace Infrastructure.Repositories
 {
     public class ExchangeRateRepository(AppDbContext context) : IExchangeRateRepository
     {

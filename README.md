@@ -45,17 +45,25 @@ Running Locally with Visual Studio
 # Clone the Repository
 git clone https://github.com/your-repository/exchange-rates.git
 cd exchange-rates
+```
+## Configure Environment Variables  
+```
+To use the Alpha Vantage API, you'll need to generate an API key. Here's how to do it:  
 
-# Configure Environment Variables
-# Update appsettings.json with the following values
-# {
-#   "ConnectionStrings": {
-#     "DefaultConnection": "Host=localhost;Database=exchange_rates;Username=postgres;Password=postgres"
-#   },
-#   "AlphaVantage": {
-#     "ApiKey": "your-alpha-vantage-api-key"
-#   }
-# }
+1. Visit [Alpha Vantage](https://www.alphavantage.co).  
+2. Sign up for a free account or log in if you already have one.  
+3. Navigate to your profile or account settings to generate a new API key.  
+4. Copy the API key provided to you.  
+
+You will need to configure this API key in your application. Instead of directly updating appsettings.json, we recommend setting it up as an environment variable or using a configuration method that fits your application's deployment strategy.  
+
+For example, you might set the key as an environment variable like this:  
+- On Linux/MacOS: export ALPHA_VANTAGE_API_KEY=your-api-key 
+- On Windows (Command Prompt): set ALPHA_VANTAGE_API_KEY=your-api-key 
+
+Then, use your code or framework to read the environment variable dynamically.  
+
+We recommend using the CURRENCY_EXCHANGE_RATE function of [Alpha Vantage](https://www.alphavantage.co).
 
 # Start the Application
 # Open the project in Visual Studio.

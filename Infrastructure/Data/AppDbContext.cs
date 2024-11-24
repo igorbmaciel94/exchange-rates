@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using ExchangeRates.Domain.Entities;
+using Domain.Entities;
 
-namespace ExchangeRates.Infrastructure.Data
+namespace Infrastructure.Data
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public DbSet<ExchangeRate> ExchangeRates { get; set; }
+        public required DbSet<ExchangeRate> ExchangeRates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,7 +1,7 @@
 ﻿using Application.Models;
 using System.Threading.Tasks;
 
-namespace ExchangeRates.Application.Interfaces
+namespace Application.Interfaces
 {
     public interface IExternalExchangeRateProvider
     {

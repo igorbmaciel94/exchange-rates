@@ -9,6 +9,9 @@ services:
       - "8080:80"    
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
       ConnectionStrings__DefaultConnection: ${POSTGRES_CONNECTION_STRING}
       AlphaVantage__ApiKey: ${ALPHA_VANTAGE_API_KEY}
 

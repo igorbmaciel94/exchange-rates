@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
-using ExchangeRates.Domain.Entities;
+using Domain.Entities;
 
-namespace ExchangeRates.Application.Interfaces
+namespace Application.Interfaces
 {
     public interface IExchangeRateService
     {
         Task<ExchangeRate> GetRateAsync(string baseCurrency, string quoteCurrency);
 
-        Task<ExchangeRate> AddOrUpdateRateAsync(string baseCurrency, string quoteCurrency, decimal bid, decimal ask);        
+        Task<ExchangeRate> AddOrUpdateRateAsync(string baseCurrency, string quoteCurrency, decimal bid, decimal ask);
     }
 }

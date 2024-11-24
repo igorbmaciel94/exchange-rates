@@ -1,8 +1,8 @@
 
 using System.Threading.Tasks;
-using ExchangeRates.Domain.Entities;
+using Domain.Entities;
 
-namespace ExchangeRates.Domain.Interfaces
+namespace Domain.Interfaces
 {
     public interface IExchangeRateRepository
     {
