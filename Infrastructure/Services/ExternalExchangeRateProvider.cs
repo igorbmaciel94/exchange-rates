@@ -18,11 +18,9 @@ namespace Infrastructure.Services
             _apiKey = configuration["AlphaVantage:ApiKey"];
             _logger = logger;
 
-            if (string.IsNullOrEmpty(_apiKey))
-            {
-                _logger.LogCritical("External API Key is not configured.");
-                throw new InvalidOperationException("External API Key is not configured.");
-            }
+            if (!string.IsNullOrEmpty(_apiKey)) return;
+            _logger.LogCritical("External API Key is not configured.");
+            throw new InvalidOperationException("External API Key is not configured.");
         }
 
         public async Task<ExternalRate?> FetchExchangeRateAsync(string baseCurrency, string quoteCurrency)
@@ -41,11 +39,10 @@ namespace Infrastructure.Services
                 }
 
                 var content = await response.Content.ReadAsStringAsync();
-                var json = JsonDocument.Parse(content);
+                var exchangeRateResponse = JsonSerializer.Deserialize<ExchangeRateResponse>(content);
 
-                var exchangeRateData = json.RootElement.GetProperty("Realtime Currency Exchange Rate");
-                var bid = decimal.Parse(exchangeRateData.GetProperty("8. Bid Price").GetString() ?? "0");
-                var ask = decimal.Parse(exchangeRateData.GetProperty("9. Ask Price").GetString() ?? "0");
+                var bid = exchangeRateResponse?.RealtimeCurrencyExchangeRate.BidPrice ?? 0;
+                var ask = exchangeRateResponse?.RealtimeCurrencyExchangeRate.AskPrice ?? 0;
 
                 _logger.LogInformation("Successfully fetched exchange rate: Bid={Bid}, Ask={Ask}.", bid, ask);
                 return new ExternalRate(bid, ask);

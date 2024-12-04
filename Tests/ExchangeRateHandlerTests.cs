@@ -70,9 +70,73 @@ namespace Tests
             mockLogger.VerifyLog(LogLevel.Information,
                 "Exchange rate found. Updating values.", Times.Once());
         }
+        
+        [Fact]
+        public async Task GetRateAsync_ReturnsRateFromRepository_WhenRateExists()
+        {
+            // Arrange
+            var expectedRate = new ExchangeRate(new CurrencyPair("USD", "EUR"), 1.1m, 1.2m);
+
+            var mockRepo = new Mock<IExchangeRateRepository>();
+            mockRepo.Setup(repo => repo.GetRateAsync("USD", "EUR")).ReturnsAsync(expectedRate);
+
+            var mockExternalProvider = new Mock<IExternalExchangeRateProvider>(); // External provider won't be called
+            var mockLogger = new Mock<ILogger<ExchangeRateHandler>>();
+
+            var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
+
+            // Act
+            var result = await service.GetRateAsync("USD", "EUR");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expectedRate, result);
+            mockRepo.Verify(repo => repo.GetRateAsync("USD", "EUR"), Times.Once);
+            mockExternalProvider.Verify(provider => provider.FetchExchangeRateAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            mockLogger.VerifyLog(LogLevel.Information,
+                "Fetching exchange rate for USD/EUR from the repository.", Times.Once());
+        }
 
         [Fact]
-        public async Task AddOrUpdateRateAsync_ThrowsException_WhenExternalFetchFails()
+        public async Task GetRateAsync_ReturnsRateFromExternalProvider_WhenRepositoryIsEmpty()
+        {
+            // Arrange
+            var externalRate = new ExternalRate(1.1m, 1.2m);
+            var expectedRate = new ExchangeRate(new CurrencyPair("USD", "EUR"), externalRate.Bid, externalRate.Ask);
+
+            var mockRepo = new Mock<IExchangeRateRepository>();
+            mockRepo.Setup(repo => repo.GetRateAsync("USD", "EUR")).ReturnsAsync((ExchangeRate)null);
+            mockRepo.Setup(repo => repo.AddRateAsync(It.IsAny<ExchangeRate>())).Returns(Task.CompletedTask);
+
+            var mockExternalProvider = new Mock<IExternalExchangeRateProvider>();
+            mockExternalProvider.Setup(provider => provider.FetchExchangeRateAsync("USD", "EUR")).ReturnsAsync(externalRate);
+
+            var mockLogger = new Mock<ILogger<ExchangeRateHandler>>();
+
+            var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
+
+            // Act
+            var result = await service.GetRateAsync("USD", "EUR");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expectedRate.Pair.BaseCurrency, result.Pair.BaseCurrency);
+            Assert.Equal(expectedRate.Pair.QuoteCurrency, result.Pair.QuoteCurrency);
+            Assert.Equal(expectedRate.Bid, result.Bid);
+            Assert.Equal(expectedRate.Ask, result.Ask);
+
+            mockRepo.Verify(repo => repo.GetRateAsync("USD", "EUR"), Times.Once);
+            mockExternalProvider.Verify(provider => provider.FetchExchangeRateAsync("USD", "EUR"), Times.Once);
+            mockLogger.VerifyLog(LogLevel.Information,
+                "Fetching exchange rate for USD/EUR from the repository.", Times.Once());
+            mockLogger.VerifyLog(LogLevel.Information,
+                "Exchange rate not found. Fetching from external provider.", Times.Once());
+            mockLogger.VerifyLog(LogLevel.Information,
+                "Added new exchange rate for USD/EUR.", Times.Once());
+        }
+
+        [Fact]
+        public async Task GetRateAsync_ReturnsNull_WhenBothRepositoryAndExternalProviderFail()
         {
             // Arrange
             var mockRepo = new Mock<IExchangeRateRepository>();
@@ -86,14 +150,16 @@ namespace Tests
 
             var service = new ExchangeRateHandler(mockRepo.Object, mockExternalProvider.Object, mockLogger.Object);
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() =>
-                service.AddOrUpdateRateAsync("USD", "EUR", 1.1m, 1.2m));
+            // Act
+            var result = await service.GetRateAsync("USD", "EUR");
 
-            Assert.Equal("Failed to fetch exchange rate for USD/EUR.", exception.Message);
-            mockRepo.Verify(repo => repo.AddRateAsync(It.IsAny<ExchangeRate>()), Times.Never);
+            // Assert
+            Assert.Null(result);
+            mockRepo.Verify(repo => repo.GetRateAsync("USD", "EUR"), Times.Once);
+            mockExternalProvider.Verify(provider => provider.FetchExchangeRateAsync("USD", "EUR"), Times.Once);
             mockLogger.VerifyLog(LogLevel.Error,
-                 string.Format("Failed to fetch exchange rate for {0}/{1}.", "USD", "EUR"), Times.Once());
+                "Failed to fetch exchange rate for USD/EUR.", Times.Once());
+            mockRepo.Verify(repo => repo.AddRateAsync(It.IsAny<ExchangeRate>()), Times.Never); // Ensure no rate is added
         }
     }
 }
